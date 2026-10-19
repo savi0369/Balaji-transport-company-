@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Balaji Transport Company - GR Tracking System</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-slate-50 min-h-screen flex flex-col justify-between">
+
+    <!-- Header -->
+    <header class="bg-blue-900 text-white shadow-md">
+        <div class="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <i class="fa-solid fa-truck-fast text-2xl text-amber-400"></i>
+                <div>
+                    <h1 class="text-lg font-bold tracking-wide">बालाजी ट्रांसपोर्ट कंपनी</h1>
+                    <p class="text-xs text-blue-200">Balaji Transport GR Tracking System</p>
+                </div>
+            </div>
+            <div class="flex space-x-2">
+                <button onclick="switchTab('client')" id="btnClient" class="px-3 py-1.5 text-sm font-medium rounded bg-amber-500 text-slate-900 transition">Track GR</button>
+                <button onclick="switchTab('admin')" id="btnAdmin" class="px-3 py-1.5 text-sm font-medium rounded bg-blue-800 text-white hover:bg-blue-700 transition">Staff Login</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-4xl mx-auto px-4 py-6 w-full flex-grow">
+
+        <!-- 1. CLIENT TRACKING SECTION -->
+        <section id="clientSection" class="space-y-6">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 text-center">
+                <h2 class="text-xl font-bold text-slate-800 mb-2">अपनी GR संख्या से माल ट्रैक करें</h2>
+                <p class="text-sm text-slate-500 mb-6">Enter your Goods Receipt (GR) Number to check current shipment status.</p>
+                
+                <div class="flex max-w-md mx-auto gap-2">
+                    <input type="text" id="searchInput" placeholder="उदा. GR-1001 या GR No. दर्ज करें" class="flex-grow px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 uppercase font-semibold">
+                    <button onclick="trackGR()" class="bg-blue-900 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-800 transition flex items-center justify-center">
+                        <i class="fa-solid fa-magnifying-glass mr-2"></i> Track
+                    </button>
+                </div>
+            </div>
+
+            <!-- Loading & Results -->
+            <div id="loading" class="hidden text-center py-8">
+                <i class="fa-solid fa-spinner fa-spin text-3xl text-blue-900"></i>
+                <p class="text-sm text-slate-500 mt-2">लोड हो रहा है...</p>
+            </div>
+
+            <div id="trackingResult" class="hidden space-y-6">
+                <!-- Shipment Summary Card -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                    <div class="flex justify-between items-center border-b pb-4 mb-4">
+                        <div>
+                            <span class="text-xs text-slate-400 uppercase font-bold">GR Number</span>
+                            <h3 id="resGrNumber" class="text-lg font-bold text-blue-900"></h3>
+                        </div>
+                        <span id="resStatusBadge" class="px-3 py-1 rounded-full text-xs font-bold uppercase"></span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mb-4">
+                        <div><span class="text-slate-500">प्रेषक (Sender):</span> <span id="resSender" class="font-semibold"></span></div>
+                        <div><span class="text-slate-500">प्राप्तकर्ता (Receiver):</span> <span id="resReceiver" class="font-semibold"></span></div>
+                        <div><span class="text-slate-500">कहाँ से (Origin):</span> <span id="resOrigin" class="font-semibold"></span></div>
+                        <div><span class="text-slate-500">कहाँ तक (Destination):</span> <span id="resDestination" class="font-semibold"></span></div>
+                        <div><span class="text-slate-500">माल का विवरण:</span> <span id="resGoods" class="font-semibold"></span></div>
+                        <div><span class="text-slate-500">वजन (Quintal):</span> <span id="resWeight" class="font-semibold"></span></div>
+                        <div><span class="text-slate-500">फ्रेइट किराया (₹):</span> <span id="resFreight" class="font-semibold text-green-700"></span></div>
+                    </div>
+                </div>
+
+                <!-- Timeline Logs -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                    <h4 class="font-bold text-slate-800 mb-4"><i class="fa-solid fa-timeline text-blue-900 mr-2"></i> शिपमेंट ट्रैकिंग इतिहास (Milestones)</h4>
+                    <div id="timelineList" class="space-y-4 border-l-2 border-blue-200 ml-3 pl-4">
+                        <!-- Dynamic timeline items -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. ADMIN LOGIN & DASHBOARD SECTION -->
+        <section id="adminSection" class="hidden space-y-6">
+            
+            <!-- Login Box -->
+            <div id="loginBox" class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 max-w-md mx-auto">
+                <h3 class="text-lg font-bold text-slate-800 mb-4 text-center"><i class="fa-solid fa-lock text-amber-500 mr-2"></i> Staff / Admin Login</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Username</label>
+                        <input type="text" id="adminUser" placeholder="admin" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-600 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Password</label>
+                        <input type="password" id="adminPass" placeholder="balaji123" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-600 outline-none">
+                    </div>
+                    <button onclick="adminLogin()" class="w-full bg-blue-900 text-white py-2 rounded-lg font-medium hover:bg-blue-800 transition">Login</button>
+                    <p id="loginError" class="text-xs text-red-600 text-center hidden">गलत यूजरनेम या पासवर्ड!</p>
+                </div>
+            </div>
+
+            <!-- Dashboard (Hidden initially) -->
+            <div id="adminDashboard" class="hidden space-y-6">
+                <div class="flex justify-between items-center bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <span class="font-bold text-blue-900"><i class="fa-solid fa-user-shield mr-2"></i> स्वागत है, एडमिन स्टाफ!</span>
+                    <button onclick="adminLogout()" class="text-xs bg-red-100 text-red-700 px-3 py-1.5 rounded font-bold hover:bg-red-200 transition">Logout</button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Form 1: Create New GR -->
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                        <h4 class="font-bold text-slate-800 mb-4 text-blue-900"><i class="fa-solid fa-circle-plus mr-2"></i> नई GR बुक करें</h4>
+                        <form id="createGrForm" onsubmit="createNewGR(event)" class="space-y-3 text-sm">
+                            <input type="text" id="newGrNumber" placeholder="GR Number (उदा. GR-1001)" required class="w-full px-3 py-2 border rounded uppercase">
+                            <div class="grid grid-cols-2 gap-2">
+                                <input type="text" id="newSender" placeholder="प्रेषक (Sender Name)" required class="px-3 py-2 border rounded">
+                                <input type="text" id="newReceiver" placeholder="प्राप्तकर्ता (Receiver Name)" required class="px-3 py-2 border rounded">
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <input type="text" id="newOrigin" placeholder="कहाँ से (Origin)" required class="px-3 py-2 border rounded">
+                                <input type="text" id="newDestination" placeholder="कहाँ तक (Destination)" required class="px-3 py-2 border rounded">
+                            </div>
+                            <input type="text" id="newGoods" placeholder="माल का विवरण (Goods Description)" required class="w-full px-3 py-2 border rounded">
+                            <div class="grid grid-cols-2 gap-2">
+                                <input type="number" step="0.01" id="newWeight" placeholder="वजन क्विंटल में (Weight)" required class="px-3 py-2 border rounded">
+                                <input type="number" step="0.01" id="newFreight" placeholder="किराया (Freight Amount ₹)" required class="px-3 py-2 border rounded">
+                            </div>
+                            <button type="submit" class="w-full bg-green-700 text-white py-2 rounded font-bold hover:bg-green-600 transition">GR दर्ज करें</button>
+                        </form>
+                    </div>
+
+                    <!-- Form 2: Update Status -->
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                        <h4 class="font-bold text-slate-800 mb-4 text-blue-900"><i class="fa-solid fa-truck-ramp-box mr-2"></i> स्टेटस / लोकेशन अपडेट करें</h4>
+                        <form id="updateStatusForm" onsubmit="updateStatus(event)" class="space-y-3 text-sm">
+                            <input type="text" id="upGrNumber" placeholder="मौजूदा GR Number" required class="w-full px-3 py-2 border rounded uppercase">
+                            <input type="text" id="upLocation" placeholder="वर्तमान लोकेशन (Location Name)" required class="w-full px-3 py-2 border rounded">
+                            <input type="text" id="upStatusUpdate" placeholder="विवरण (उदा. माल ट्रांजिट में है)" required class="w-full px-3 py-2 border rounded">
+                            <select id="upNewStatus" class="w-full px-3 py-2 border rounded bg-white">
+                                <option value="Booked">Booked (बुक किया गया)</option>
+                                <option value="Dispatched">Dispatched (रवाना)</option>
+                                <option value="In Transit">In Transit (रास्ते में)</option>
+                                <option value="Out for Delivery">Out for Delivery (डिलीवरी के लिए)</option>
+                                <option value="Delivered">Delivered (माल पहुँच गया)</option>
+                            </select>
+                            <button type="submit" class="w-full bg-blue-900 text-white py-2 rounded font-bold hover:bg-blue-800 transition">स्टेटस अपडेट करें</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 text-center py-4 text-xs text-slate-500">
+        &copy; 2026 Balaji Transport Company. All Rights Reserved. Powered by Railway & Vercel.
+    </footer>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // Railway Backend Live URL
+        const API_BASE = "https://balaji-transport-company-production.up.railway.app";
+
+        function switchTab(tab) {
+            if(tab === 'client') {
+                document.getElementById('clientSection').classList.remove('hidden');
+                document.getElementById('adminSection').classList.add('hidden');
+                document.getElementById('btnClient').className = "px-3 py-1.5 text-sm font-medium rounded bg-amber-500 text-slate-900 transition";
+                document.getElementById('btnAdmin').className = "px-3 py-1.5 text-sm font-medium rounded bg-blue-800 text-white hover:bg-blue-700 transition";
+            } else {
+                document.getElementById('clientSection').classList.add('hidden');
+                document.getElementById('adminSection').classList.remove('hidden');
+                document.getElementById('btnAdmin').className = "px-3 py-1.5 text-sm font-medium rounded bg-amber-500 text-slate-900 transition";
+                document.getElementById('btnClient').className = "px-3 py-1.5 text-sm font-medium rounded bg-blue-800 text-white hover:bg-blue-700 transition";
+            }
+        }
+
+        async function trackGR() {
+            const gr = document.getElementById('searchInput').value.trim();
+            if(!gr) {
+                alert('कृपया वैध GR नंबर दर्ज करें!');
+                return;
+            }
+
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('trackingResult').classList.add('hidden');
+
+            try {
+                const res = await fetch(`${API_BASE}/api/track/${gr}`);
+                const data = await res.json();
+
+                document.getElementById('loading').classList.add('hidden');
+
+                if(data.success) {
+                    const s = data.shipment;
+                    document.getElementById('resGrNumber').innerText = s.gr_number;
+                    document.getElementById('resSender').innerText = s.sender_name;
+                    document.getElementById('resReceiver').innerText = s.receiver_name;
+                    document.getElementById('resOrigin').innerText = s.origin;
+                    document.getElementById('resDestination').innerText = s.destination;
+                    document.getElementById('resGoods').innerText = s.goods_description;
+                    document.getElementById('resWeight').innerText = s.weight_quintal + ' Qtl';
+                    document.getElementById('resFreight').innerText = '₹ ' + s.freight_amount;
+
+                    const badge = document.getElementById('resStatusBadge');
+                    badge.innerText = s.status;
+                    badge.className = "px-3 py-1 rounded-full text-xs font-bold uppercase " + 
+                        (s.status === 'Delivered' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800');
+
+                    let timelineHTML = '';
+                    data.trackingHistory.forEach(log => {
+                        timelineHTML += `
+                            <div class="relative pb-4">
+                                <div class="text-xs text-slate-400 font-bold">${new Date(log.updated_at).toLocaleString('hi-IN')}</div>
+                                <div class="text-sm font-bold text-slate-800">${log.status_update}</div>
+                                <div class="text-xs text-blue-700"><i class="fa-solid fa-location-dot mr-1"></i> ${log.location_name}</div>
+                            </div>
+                        `;
+                    });
+                    document.getElementById('timelineList').innerHTML = timelineHTML;
+                    document.getElementById('trackingResult').classList.remove('hidden');
+                } else {
+                    alert('यह GR नंबर नहीं मिला!');
+                }
+            } catch (err) {
+                document.getElementById('loading').classList.add('hidden');
+                alert('कनेक्शन एरर! कृपया दोबारा प्रयास करें।');
+            }
+        }
+
+        function adminLogin() {
+            const u = document.getElementById('adminUser').value;
+            const p = document.getElementById('adminPass').value;
+            if(u === 'admin' && p === 'balaji123') {
+                document.getElementById('loginBox').classList.add('hidden');
+                document.getElementById('adminDashboard').classList.remove('hidden');
+            } else {
+                document.getElementById('loginError').classList.remove('hidden');
+            }
+        }
+
+        function adminLogout() {
+            document.getElementById('loginBox').classList.remove('hidden');
+            document.getElementById('adminDashboard').classList.add('hidden');
+            document.getElementById('adminUser').value = '';
+            document.getElementById('adminPass').value = '';
+            document.getElementById('loginError').classList.add('hidden');
+        }
+
+        async function createNewGR(e) {
+            e.preventDefault();
+            const bodyData = {
+                gr_number: document.getElementById('newGrNumber').value.trim(),
+                sender_name: document.getElementById('newSender').value,
+                receiver_name: document.getElementById('newReceiver').value,
+                origin: document.getElementById('newOrigin').value,
+                destination: document.getElementById('newDestination').value,
+                goods_description: document.getElementById('newGoods').value,
+                weight_quintal: document.getElementById('newWeight').value,
+                freight_amount: document.getElementById('newFreight').value
+            };
+
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/shipment`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(bodyData)
+                });
+                const data = await res.json();
+                if(data.success) {
+                    alert('नई GR सफलतापूर्वक दर्ज हो गई!');
+                    document.getElementById('createGrForm').reset();
+                } else {
+                    alert('एरर: ' + data.error);
+                }
+            } catch(err) {
+                alert('सर्वर एरर!');
+            }
+        }
+
+        async function updateStatus(e) {
+            e.preventDefault();
+            const bodyData = {
+                gr_number: document.getElementById('upGrNumber').value.trim(),
+                status_update: document.getElementById('upStatusUpdate').value,
+                location_name: document.getElementById('upLocation').value,
+                new_status: document.getElementById('upNewStatus').value
+            };
+
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/update-status`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(bodyData)
+                });
+                const data = await res.json();
+                if(data.success) {
+                    alert('शिपमेंट स्टेटस सफलतापूर्वक अपडेट हो गया!');
+                    document.getElementById('updateStatusForm').reset();
+                } else {
+                    alert('एरर: ' + data.error);
+                }
+            } catch(err) {
+                alert('सर्वर एरर!');
+            }
+        }
+    </script>
+</body>
+</html>
